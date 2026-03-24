@@ -1,0 +1,105 @@
+import java.util.*;
+
+class Student {
+    int id;
+    int priority;
+    List<Integer> preferences;
+
+    Student(int id, int priority, List<Integer> preferences) {
+        this.id = id;
+        this.priority = priority;
+        this.preferences = preferences;
+    }
+}
+
+// Renamed from InternshipAllocation to Main
+public class Main {
+
+    static int bestScore = -1;
+    static int[] bestAssignment;
+
+    // -------- GREEDY ALGORITHM --------
+    public static int[] greedy(List<Student> students, int[] capacity) {
+        int n = students.size();
+        int[] assignment = new int[n];
+        Arrays.fill(assignment, -1);
+
+        List<Student> sortedStudents = new ArrayList<>(students);
+        sortedStudents.sort((a, b) -> b.priority - a.priority);
+
+        for (Student s : sortedStudents) {
+            for (int pref : s.preferences) {
+                if (capacity[pref] > 0) {
+                    assignment[s.id] = pref;
+                    capacity[pref]--;
+                    break;
+                }
+            }
+        }
+        return assignment;
+    }
+
+    // -------- BACKTRACKING ALGORITHM --------
+    public static void backtrack(List<Student> students, int[] capacity,
+                                 int index, int[] current, int score) {
+        if (index == students.size()) {
+            if (score > bestScore) {
+                bestScore = score;
+                bestAssignment = current.clone();
+            }
+            return;
+        }
+
+        Student s = students.get(index);
+        boolean canAssignAny = false;
+
+        for (int i = 0; i < s.preferences.size(); i++) {
+            int pref = s.preferences.get(i);
+            if (capacity[pref] > 0) {
+                canAssignAny = true;
+                current[s.id] = pref;
+                capacity[pref]--;
+                int currentScore = score + (10 - i); 
+                backtrack(students, capacity, index + 1, current, currentScore);
+                capacity[pref]++;
+                current[s.id] = -1;
+            }
+        }
+
+        if (!canAssignAny) {
+            backtrack(students, capacity, index + 1, current, score);
+        }
+    }
+
+    public static void main(String[] args) {
+        int[] capacity = {2, 1}; 
+        List<Student> students = new ArrayList<>();
+        students.add(new Student(0, 90, Arrays.asList(0, 1)));
+        students.add(new Student(1, 80, Arrays.asList(0)));
+        students.add(new Student(2, 70, Arrays.asList(1)));
+
+        // Run Greedy
+        int[] greedyRes = greedy(students, capacity.clone());
+
+        // Run Backtracking
+        bestScore = -1; 
+        bestAssignment = new int[students.size()];
+        Arrays.fill(bestAssignment, -1);
+        int[] current = new int[students.size()];
+        Arrays.fill(current, -1);
+        backtrack(students, capacity.clone(), 0, current, 0);
+
+        // Output
+        System.out.println("=== GREEDY ALLOCATION ===");
+        display(greedyRes);
+        System.out.println("\n=== OPTIMAL (BACKTRACKING) ===");
+        display(bestAssignment);
+    }
+
+    static void display(int[] arr) {
+        for (int i = 0; i < arr.length; i++) {
+            String choice = (arr[i] == -1) ? "None" : "Internship " + arr[i];
+            System.out.println("Student " + i + ": " + choice);
+        }
+    }
+}
